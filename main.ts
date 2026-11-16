@@ -1,11 +1,34 @@
-// A working ai-excited-01 entry (Node 22, standard library only): its image is the entry.png beside this file, and
-// the program copies it to /output/entry.png. A starting point, not a winner: replace the image. The gate takes a
-// whole PNG or JPEG of at most 1 MiB and 1024 by 1024 pixels, and the judge sees exactly the bytes copied.
+// ai-excited-01 entry.
 //
-// Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
-//   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+// The image is drawn once (a phoenix bursting out of its picture frame)
+// and stored in this repository as entry.png. This program's only job is
+// to place those exact bytes at <output>/entry.png, every run the same.
+//
+// Standard library only. It never touches the network and never writes
+// anything but the single output file, so two runs in a sandbox produce
+// byte-identical output.
+import { copyFileSync, existsSync, mkdirSync, statSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { copyFileSync } from 'node:fs';
-import { join } from 'node:path';
+// The sandbox tells the program where to write through this variable;
+// the competition's own default is /output.
+const OUTPUT_DIR = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
 
-copyFileSync(new URL('./entry.png', import.meta.url), join(process.env.MAKEFUN_OUTPUT_DIR ?? '/output', 'entry.png'));
+// entry.png sits next to this file in the repository.
+const HERE = dirname(fileURLToPath(import.meta.url));
+const SOURCE = join(HERE, "entry.png");
+const TARGET = join(OUTPUT_DIR, "entry.png");
+
+if (!existsSync(SOURCE)) {
+  throw new Error(`entry image missing from repository: ${SOURCE}`);
+}
+
+mkdirSync(OUTPUT_DIR, { recursive: true });
+copyFileSync(SOURCE, TARGET);
+
+// A truncated copy would still be a file, so confirm the bytes match.
+if (statSync(SOURCE).size !== statSync(TARGET).size) {
+  throw new Error(`copied entry is incomplete: ${TARGET}`);
+}
+console.log(`wrote ${TARGET}`);
